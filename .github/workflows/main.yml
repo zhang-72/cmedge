@@ -1,0 +1,33 @@
+name: main
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.FORK_SYNC_TOKEN }}  # 确保缩进对齐
+          fetch-depth: 0
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/cmliu/edgetunnel.git || git remote set-url upstream https://github.com/cmliu/edgetunnel.git
+          git fetch upstream
+
+      - name: Sync main branch
+        run: |
+          git checkout main
+          git fetch upstream main          # 明确拉取上游 main 分支
+          git reset --hard upstream/main  # 强制本地分支与上游完全一致
+          git push origin main --force     # 强制推送到你的 fork
